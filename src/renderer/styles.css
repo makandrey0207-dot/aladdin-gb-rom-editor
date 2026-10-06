@@ -171,7 +171,8 @@ button.ghost {
 
 .sidebar,
 .main-panel,
-.tile-panel {
+.tile-panel,
+.palette-panel {
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -295,11 +296,14 @@ button.ghost {
   letter-spacing: 0.04em;
 }
 
-.tile-panel {
+.tile-panel,
+.palette-panel {
   padding: 16px;
+  margin-bottom: 20px;
 }
 
-#tile-canvas {
+#tile-canvas,
+#sprite-canvas {
   display: block;
   width: 100%;
   max-width: 450px;
@@ -313,6 +317,47 @@ button.ghost {
 .tile-details {
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(80px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.palette-swatch {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(31, 41, 55, 0.7);
+}
+
+.palette-color {
+  height: 54px;
+  width: 100%;
+}
+
+.palette-label {
+  display: block;
+  padding: 8px;
+  text-align: center;
+  color: var(--text);
+  font-size: 0.8rem;
+}
+
+.sprite-tools {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sprite-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: min(220px, 100%);
 }
 
 @media (max-width: 980px) {
@@ -335,5 +380,10 @@ button.ghost {
 
   .search-wrap input {
     width: 100%;
+  }
+
+  .sprite-tools {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

@@ -7,7 +7,8 @@ const state = {
   lastSearch: null,
   activeSection: null,
   tileBitmap: null,
-  selectedTileOffset: 0x4000
+  selectedTileOffset: 0x4000,
+  palette: ['#000000', '#7C7C7C', '#B0B0B0', '#FFFFFF']
 };
 
 const fileInfoEl = document.getElementById('file-info');
@@ -21,6 +22,10 @@ const searchButton = document.getElementById('search-button');
 const sectionListEl = document.getElementById('rom-sections');
 const tileCanvas = document.getElementById('tile-canvas');
 const tileDetails = document.getElementById('tile-details');
+const paletteGridEl = document.getElementById('palette-grid');
+const spriteCanvas = document.getElementById('sprite-canvas');
+const spriteDetails = document.getElementById('sprite-details');
+const extractSpriteButton = document.getElementById('extract-sprite-button');
 
 function formatHexByte(value) {
   return Number(value).toString(16).padStart(2, '0').toUpperCase();
@@ -33,6 +38,15 @@ function formatOffset(value) {
 function setStatus(message, isError = false) {
   fileInfoEl.textContent = message;
   fileInfoEl.style.color = isError ? '#f87171' : '#94a3b8';
+}
+
+function buildPaletteGrid() {
+  paletteGridEl.innerHTML = state.palette.map((color, index) => `
+    <div class="palette-swatch">
+      <div class="palette-color" style="background:${color};"></div>
+      <span class="palette-label">${index}: ${color}</span>
+    </div>
+  `).join('');
 }
 
 function buildRomSections() {
@@ -147,8 +161,10 @@ function drawHexTable() {
 
       state.bytes[offset] = parseInt(normalized, 16);
       state.highlightOffset = offset;
+      state.selectedTileOffset = offset;
       drawHexTable();
       drawTilePreview();
+      drawSpritePreview();
       setStatus(`Modified byte at ${formatOffset(offset)} to ${normalized.toUpperCase()}`);
     });
   });
@@ -186,8 +202,6 @@ function drawTilePreview() {
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(0, 0, tileCanvas.width, tileCanvas.height);
 
-  const palette = ['#000000', '#7C7C7C', '#B0B0B0', '#FFFFFF'];
-
   for (let tileIndex = 0; tileIndex < tileCount; tileIndex += 1) {
     const tileStart = previewOffset + tileIndex * 16;
     if (tileStart + 15 >= state.bytes.length) {
@@ -203,9 +217,10 @@ function drawTilePreview() {
       const high = state.bytes[rowBase + 1];
 
       for (let px = 0; px < tileSize; px += 1) {
-        const bit = (7 - px);
+        const bit = 7 - px;
         const colorIndex = ((high >> bit) & 1) << 1 | ((low >> bit) & 1);
-        ctx.fillStyle = palette[colorIndex];
+        const color = state.palette[colorIndex] || '#000000';
+        ctx.fillStyle = color;
         ctx.fillRect(tileX + (px * scale), tileY + (py * scale), scale, scale);
       }
     }
@@ -213,6 +228,55 @@ function drawTilePreview() {
 
   const selectedStart = previewOffset + Math.floor((state.selectedTileOffset - previewOffset) / 16) * 16;
   tileDetails.textContent = `Tile preview • offset ${formatOffset(previewOffset)} • selected tile ${formatOffset(selectedStart)}`;
+}
+
+function drawSpritePreview() {
+  if (!state.bytes.length) {
+    spriteDetails.textContent = 'Select a tile to inspect sprite pixels.';
+    return;
+  }
+
+  const ctx = spriteCanvas.getContext('2d');
+  const base = Math.max(0x4000, Math.min(state.bytes.length - 16, state.selectedTileOffset));
+
+  ctx.clearRect(0, 0, spriteCanvas.width, spriteCanvas.height);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, spriteCanvas.width, spriteCanvas.height);
+
+  for (let py = 0; py < 8; py += 1) {
+    const rowBase = base + py * 2;
+    const low = state.bytes[rowBase];
+    const high = state.bytes[rowBase + 1];
+
+    for (let px = 0; px < 8; px += 1) {
+      const bit = 7 - px;
+      const colorIndex = ((high >> bit) & 1) << 1 | ((low >> bit) & 1);
+      ctx.fillStyle = state.palette[colorIndex] || '#000000';
+      ctx.fillRect(px * 12 + 4, py * 12 + 4, 12, 12);
+    }
+  }
+
+  spriteDetails.textContent = `Sprite tile • ${formatOffset(base)} • 8x8 pixel block`;
+}
+
+function extractSprite() {
+  if (!state.bytes.length) {
+    setStatus('Load a ROM before extracting a sprite.', true);
+    return;
+  }
+
+  const base = Math.max(0x4000, Math.min(state.bytes.length - 16, state.selectedTileOffset));
+  const spriteBytes = Array.from(state.bytes.slice(base, base + 16));
+  const payload = {
+    offset: formatOffset(base),
+    bytes: spriteBytes,
+    palette: state.palette
+  };
+
+  const text = JSON.stringify(payload, null, 2);
+  spriteDetails.textContent = `Sprite extracted: ${formatOffset(base)} (${spriteBytes.length} bytes)`;
+  console.log('Sprite payload:', text);
+  setStatus(`Sprite extracted at ${formatOffset(base)}`);
 }
 
 async function openRom() {
@@ -228,6 +292,7 @@ async function openRom() {
     state.bytes = rom.bytes;
     state.highlightOffset = null;
     state.activeSection = 'Header';
+    state.selectedTileOffset = 0x4000;
 
     fileInfoEl.textContent = `${rom.fileName} • ${rom.size} bytes`;
     fileInfoEl.style.color = '#e2e8f0';
@@ -236,6 +301,7 @@ async function openRom() {
     buildRomSections();
     drawHexTable();
     drawTilePreview();
+    drawSpritePreview();
   } catch (error) {
     setStatus(error.message, true);
     console.error(error);
@@ -322,6 +388,7 @@ function searchRom() {
 
   drawHexTable();
   drawTilePreview();
+  drawSpritePreview();
   setStatus(`Found ${label} at ${formatOffset(offset)}`);
 
   const targetButton = document.querySelector(`.byte-cell[data-offset="${offset}"]`);
@@ -347,6 +414,7 @@ function analyzeRom() {
 openButton.addEventListener('click', openRom);
 saveButton.addEventListener('click', saveRom);
 analyzeButton.addEventListener('click', analyzeRom);
+extractSpriteButton.addEventListener('click', extractSprite);
 searchButton.addEventListener('click', searchRom);
 searchInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
@@ -356,7 +424,10 @@ searchInput.addEventListener('keydown', (event) => {
 
 setStatus('No ROM loaded');
 renderRomInfo(null);
+buildPaletteGrid();
 buildRomSections();
 drawHexTable();
 drawTilePreview();
-  
+drawSpritePreview();
+
+
