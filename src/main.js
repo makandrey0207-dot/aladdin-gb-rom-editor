@@ -124,12 +124,12 @@ ipcMain.handle('save-rom', async (_event, { filePath, bytes }) => {
     throw new Error('No file path provided');
   }
 
-  const output = Buffer.from(Array.isArray(bytes) ? bytes : [], (value) => value & 0xff);
-  fs.writeFileSync(filePath, output);
+  const buffer = Buffer.from(Array.isArray(bytes) ? bytes : [], (value) => value & 0xff);
+  fs.writeFileSync(filePath, buffer);
 
   return {
     ok: true,
-    bytesWritten: output.length,
+    bytesWritten: buffer.length,
     filePath
   };
 });
