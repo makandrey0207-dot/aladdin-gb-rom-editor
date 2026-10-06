@@ -1,0 +1,12 @@
+{
+  "name": "aladdin-gb-rom-editor",
+  "version": "0.1.0",
+  "description": "Desktop ROM editor for the Game Boy Aladdin game",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^31.7.1"
+  }
+}

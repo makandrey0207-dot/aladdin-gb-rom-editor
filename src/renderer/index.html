@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aladdin GB ROM Editor</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Game Boy reverse engineering</p>
+          <h1>Aladdin GB ROM Editor</h1>
+        </div>
+
+        <div class="toolbar">
+          <button id="open-rom-button">Open ROM</button>
+          <button id="save-rom-button" class="secondary">Save ROM</button>
+        </div>
+      </header>
+
+      <section class="control-strip">
+        <div id="file-info">No ROM loaded</div>
+
+        <div class="search-wrap">
+          <input id="search-input" type="text" placeholder="Search hex (00 7F) or text" />
+          <button id="search-button">Search</button>
+        </div>
+      </section>
+
+      <section id="rom-info" class="rom-info">
+        <div class="empty-state">Load a ROM to inspect metadata.</div>
+      </section>
+
+      <main class="hex-panel">
+        <table id="hex-table">
+          <tbody></tbody>
+        </table>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
