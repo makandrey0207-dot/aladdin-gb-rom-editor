@@ -19,9 +19,12 @@ const openButton = document.getElementById('open-rom-button');
 const saveButton = document.getElementById('save-rom-button');
 const analyzeButton = document.getElementById('analyze-rom-button');
 const searchButton = document.getElementById('search-button');
+const exportSpriteButton = document.getElementById('export-sprite-button');
 const sectionListEl = document.getElementById('rom-sections');
 const tileCanvas = document.getElementById('tile-canvas');
+const mapCanvas = document.getElementById('map-canvas');
 const tileDetails = document.getElementById('tile-details');
+const mapDetails = document.getElementById('map-details');
 const paletteGridEl = document.getElementById('palette-grid');
 const spriteCanvas = document.getElementById('sprite-canvas');
 const spriteDetails = document.getElementById('sprite-details');
@@ -165,6 +168,7 @@ function drawHexTable() {
       drawHexTable();
       drawTilePreview();
       drawSpritePreview();
+      drawMapPreview();
       setStatus(`Modified byte at ${formatOffset(offset)} to ${normalized.toUpperCase()}`);
     });
   });
@@ -259,6 +263,59 @@ function drawSpritePreview() {
   spriteDetails.textContent = `Sprite tile • ${formatOffset(base)} • 8x8 pixel block`;
 }
 
+function drawMapPreview() {
+  if (!state.bytes.length) {
+    mapDetails.textContent = 'Load a ROM to preview level map blocks.';
+    return;
+  }
+
+  const ctx = mapCanvas.getContext('2d');
+  const blockSize = 16;
+  const arrayStart = Math.max(0, Math.min(state.bytes.length - 256, 0x5000));
+
+  ctx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+
+  for (let y = 0; y < 16; y += 1) {
+    for (let x = 0; x < 16; x += 1) {
+      const index = arrayStart + (y * 16 + x);
+      const value = state.bytes[index] || 0;
+      const color = state.palette[value % state.palette.length] || '#000000';
+      ctx.fillStyle = color;
+      ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
+    }
+  }
+
+  mapDetails.textContent = `Map blocks • sample from ${formatOffset(arrayStart)} (${16}x${16} preview)`;
+}
+
+function exportSprite() {
+  if (!state.bytes.length) {
+    setStatus('Load a ROM before exporting a sprite.', true);
+    return;
+  }
+
+  const base = Math.max(0x4000, Math.min(state.bytes.length - 16, state.selectedTileOffset));
+  const spriteBytes = Array.from(state.bytes.slice(base, base + 16));
+  const payload = {
+    offset: formatOffset(base),
+    bytes: spriteBytes,
+    palette: state.palette
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `aladdin-sprite-${formatOffset(base).replace('0x', '')}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  spriteDetails.textContent = `Exported sprite • ${formatOffset(base)} • ${spriteBytes.length} bytes`;
+  setStatus(`Sprite exported at ${formatOffset(base)}`);
+}
+
 function extractSprite() {
   if (!state.bytes.length) {
     setStatus('Load a ROM before extracting a sprite.', true);
@@ -302,6 +359,7 @@ async function openRom() {
     drawHexTable();
     drawTilePreview();
     drawSpritePreview();
+    drawMapPreview();
   } catch (error) {
     setStatus(error.message, true);
     console.error(error);
@@ -389,6 +447,7 @@ function searchRom() {
   drawHexTable();
   drawTilePreview();
   drawSpritePreview();
+  drawMapPreview();
   setStatus(`Found ${label} at ${formatOffset(offset)}`);
 
   const targetButton = document.querySelector(`.byte-cell[data-offset="${offset}"]`);
@@ -415,6 +474,7 @@ openButton.addEventListener('click', openRom);
 saveButton.addEventListener('click', saveRom);
 analyzeButton.addEventListener('click', analyzeRom);
 extractSpriteButton.addEventListener('click', extractSprite);
+exportSpriteButton.addEventListener('click', exportSprite);
 searchButton.addEventListener('click', searchRom);
 searchInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
@@ -429,3 +489,4 @@ buildRomSections();
 drawHexTable();
 drawTilePreview();
 drawSpritePreview();
+drawMapPreview();

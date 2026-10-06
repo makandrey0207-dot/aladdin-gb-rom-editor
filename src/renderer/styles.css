@@ -172,7 +172,8 @@ button.ghost {
 .sidebar,
 .main-panel,
 .tile-panel,
-.palette-panel {
+.palette-panel,
+.map-panel {
   background: rgba(15, 23, 42, 0.9);
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -297,13 +298,15 @@ button.ghost {
 }
 
 .tile-panel,
-.palette-panel {
+.palette-panel,
+.map-panel {
   padding: 16px;
   margin-bottom: 20px;
 }
 
 #tile-canvas,
-#sprite-canvas {
+#sprite-canvas,
+#map-canvas {
   display: block;
   width: 100%;
   max-width: 450px;

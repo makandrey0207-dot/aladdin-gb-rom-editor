@@ -18,6 +18,7 @@
           <button id="open-rom-button">Open ROM</button>
           <button id="save-rom-button" class="secondary">Save ROM</button>
           <button id="analyze-rom-button" class="ghost">Analyze ROM</button>
+          <button id="export-sprite-button" class="ghost">Export sprite</button>
         </div>
       </header>
 
@@ -74,6 +75,14 @@
                 <div id="sprite-details" class="tile-details">Select a tile to inspect sprite pixels.</div>
               </div>
             </div>
+          </div>
+
+          <div class="map-panel">
+            <div class="panel-header compact">
+              <h2>Map preview</h2>
+            </div>
+            <canvas id="map-canvas" width="320" height="320"></canvas>
+            <div id="map-details" class="tile-details">Load a ROM to preview level map blocks.</div>
           </div>
         </section>
       </main>
