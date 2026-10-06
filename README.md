@@ -1,42 +1,67 @@
 # Aladdin GB ROM Editor
 
-A simple desktop ROM editor for Game Boy cartridges, built around the original Aladdin game. The project is intended as a practical starter for reverse-engineering and byte editing ROM data.
+Десктопный редактор ROM для игры Aladdin на Game Boy. Инструмент для анализа и модификации данных ROM-картриджа.
 
-## Features
+## Возможности
 
-- Open a `.gb`, `.gbc`, `.bin`, or `.rom` file
-- Read ROM metadata (title, cartridge type, ROM size, RAM size)
-- View a hex dump with offset + ASCII panel
-- Click any byte to patch it directly
-- Search by hex sequence or ASCII text
-- Save modified data back to the original ROM
+- Открытие `.gb`, `.gbc`, `.bin` и `.rom` файлов
+- Просмотр метаданных ROM
+- Hex-редактор с поиском
+- Просмотр банков и секций ROM
+- Предпросмотр тайлов
+- Палитра и просмотр спрайтов
+- Экспорт sprite данных
+- Карта уровня preview
+- Сохранение изменений обратно в ROM
 
-## Run
+## Установка и запуск
+
+### Для разработки:
 
 ```bash
 npm install
 npm start
 ```
 
-## Notes
+### Для сборки exe на Windows:
 
-This is a lightweight editor skeleton, not a full disassembler or level editor yet. It is a good base for implementing additional Game Boy-specific tools such as:
+```bash
+npm install
+npm run build:win
+```
 
-- tile viewer/editor
-- palette editor
-- level data hex maps
-- sprite extraction
-- music/PCM tools
-- script and map patching
+Исполняемые файлы будут в папке `dist/`:
+- `Aladdin GB ROM Editor 1.0.0.exe` — установщик
+- `Aladdin GB ROM Editor.exe` — портативная версия
 
-## Project structure
+## Использование
 
-- `src/main.js` - Electron main process
-- `src/preload.js` - Secure preload bridge
-- `src/renderer/index.html` - UI shell
-- `src/renderer/styles.css` - styling
-- `src/renderer/app.js` - ROM loading, hex view, patching logic
+1. Запустите приложение
+2. Нажмите "Open ROM" и выберите ROM-файл Aladdin для Game Boy
+3. Используйте hex-редактор для редактирования данных
+4. Просматривайте тайлы, палитры и спрайты
+5. Нажмите "Save ROM" для сохранения изменений
 
-## License
+## Структура проекта
+
+```
+.
+├── src/
+│   ├── main.js              # Electron главный процесс
+│   ├── preload.js           # Безопасный preload мост
+│   └── renderer/
+│       ├── index.html       # UI
+│       ├── styles.css       # Стили
+│       └── app.js           # Логика приложения
+├── package.json             # Зависимости и конфиг сборки
+└── README.md
+```
+
+## Требования
+
+- Node.js 14+
+- npm или yarn
+
+## Лицензия
 
 MIT

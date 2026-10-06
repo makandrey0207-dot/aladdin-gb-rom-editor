@@ -1,12 +1,51 @@
 {
   "name": "aladdin-gb-rom-editor",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Desktop ROM editor for the Game Boy Aladdin game",
   "main": "src/main.js",
+  "homepage": "./",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "pack": "electron-builder --dir"
   },
   "devDependencies": {
-    "electron": "^31.7.1"
+    "electron": "^31.7.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.aladdin.rom.editor",
+    "productName": "Aladdin GB ROM Editor",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
