@@ -17,6 +17,7 @@
         <div class="toolbar">
           <button id="open-rom-button">Open ROM</button>
           <button id="save-rom-button" class="secondary">Save ROM</button>
+          <button id="analyze-rom-button" class="ghost">Analyze ROM</button>
         </div>
       </header>
 
@@ -33,10 +34,32 @@
         <div class="empty-state">Load a ROM to inspect metadata.</div>
       </section>
 
-      <main class="hex-panel">
-        <table id="hex-table">
-          <tbody></tbody>
-        </table>
+      <main class="workspace">
+        <aside class="sidebar">
+          <div class="panel-header">
+            <h2>ROM sections</h2>
+          </div>
+          <div id="rom-sections" class="section-list"></div>
+        </aside>
+
+        <section class="main-panel">
+          <div class="panel-header">
+            <h2>Hex editor</h2>
+          </div>
+          <div class="hex-panel">
+            <table id="hex-table">
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="tile-panel">
+            <div class="panel-header compact">
+              <h2>Tile viewer</h2>
+            </div>
+            <canvas id="tile-canvas" width="256" height="256"></canvas>
+            <div id="tile-details" class="tile-details">Load a ROM to preview tiles.</div>
+          </div>
+        </section>
       </main>
     </div>
 

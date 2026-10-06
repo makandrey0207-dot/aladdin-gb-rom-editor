@@ -4,7 +4,10 @@ const state = {
   filePath: null,
   bytes: [],
   highlightOffset: null,
-  lastSearch: null
+  lastSearch: null,
+  activeSection: null,
+  tileBitmap: null,
+  selectedTileOffset: 0x4000
 };
 
 const fileInfoEl = document.getElementById('file-info');
@@ -13,7 +16,11 @@ const hexTableBody = document.querySelector('#hex-table tbody');
 const searchInput = document.getElementById('search-input');
 const openButton = document.getElementById('open-rom-button');
 const saveButton = document.getElementById('save-rom-button');
+const analyzeButton = document.getElementById('analyze-rom-button');
 const searchButton = document.getElementById('search-button');
+const sectionListEl = document.getElementById('rom-sections');
+const tileCanvas = document.getElementById('tile-canvas');
+const tileDetails = document.getElementById('tile-details');
 
 function formatHexByte(value) {
   return Number(value).toString(16).padStart(2, '0').toUpperCase();
@@ -26,6 +33,67 @@ function formatOffset(value) {
 function setStatus(message, isError = false) {
   fileInfoEl.textContent = message;
   fileInfoEl.style.color = isError ? '#f87171' : '#94a3b8';
+}
+
+function buildRomSections() {
+  if (!state.bytes.length) {
+    sectionListEl.innerHTML = '<div class="empty-state">No ROM loaded</div>';
+    return [];
+  }
+
+  const sections = [];
+  const maxLength = state.bytes.length;
+
+  sections.push({
+    name: 'Header',
+    start: 0x0000,
+    end: 0x014F,
+    description: 'ROM header / title / cartridge info'
+  });
+
+  const bankSize = 0x4000;
+  for (let bank = 0; bank < Math.min(8, Math.ceil(maxLength / bankSize)); bank += 1) {
+    const start = bank * bankSize;
+    const end = Math.min(start + bankSize, maxLength);
+    sections.push({
+      name: `Bank ${bank}`,
+      start,
+      end,
+      description: `${end - start} bytes`
+    });
+  }
+
+  if (maxLength > 0x8000) {
+    sections.push({
+      name: 'Tail',
+      start: 0x8000,
+      end: maxLength,
+      description: 'Remaining bytes after the first banks'
+    });
+  }
+
+  sectionListEl.innerHTML = sections.map((section) => {
+    const active = state.activeSection === section.name ? 'active' : '';
+    return `
+      <button class="section-item ${active}" data-section="${section.name}" data-start="${section.start}">
+        <strong>${section.name}</strong>
+        <small>${section.description}</small>
+      </button>
+    `;
+  }).join('');
+
+  sectionListEl.querySelectorAll('.section-item').forEach((button) => {
+    button.addEventListener('click', () => {
+      const start = Number(button.dataset.start);
+      state.activeSection = button.dataset.section;
+      state.highlightOffset = start;
+      drawHexTable();
+      buildRomSections();
+      setStatus(`Selected ${button.dataset.section} at ${formatOffset(start)}`);
+    });
+  });
+
+  return sections;
 }
 
 function drawHexTable() {
@@ -80,6 +148,7 @@ function drawHexTable() {
       state.bytes[offset] = parseInt(normalized, 16);
       state.highlightOffset = offset;
       drawHexTable();
+      drawTilePreview();
       setStatus(`Modified byte at ${formatOffset(offset)} to ${normalized.toUpperCase()}`);
     });
   });
@@ -100,6 +169,52 @@ function renderRomInfo(metadata) {
   `;
 }
 
+function drawTilePreview() {
+  if (!state.bytes.length) {
+    tileDetails.textContent = 'Load a ROM to preview tiles.';
+    return;
+  }
+
+  const ctx = tileCanvas.getContext('2d');
+  const tileSize = 8;
+  const scale = 8;
+  const tilesPerRow = 4;
+  const tileCount = 16;
+  const previewOffset = Math.max(0x4000, Math.min(state.bytes.length - 16 * 16, 0x4000));
+
+  ctx.clearRect(0, 0, tileCanvas.width, tileCanvas.height);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, tileCanvas.width, tileCanvas.height);
+
+  const palette = ['#000000', '#7C7C7C', '#B0B0B0', '#FFFFFF'];
+
+  for (let tileIndex = 0; tileIndex < tileCount; tileIndex += 1) {
+    const tileStart = previewOffset + tileIndex * 16;
+    if (tileStart + 15 >= state.bytes.length) {
+      break;
+    }
+
+    const tileX = (tileIndex % tilesPerRow) * (tileSize * scale);
+    const tileY = Math.floor(tileIndex / tilesPerRow) * (tileSize * scale);
+
+    for (let py = 0; py < tileSize; py += 1) {
+      const rowBase = tileStart + py * 2;
+      const low = state.bytes[rowBase];
+      const high = state.bytes[rowBase + 1];
+
+      for (let px = 0; px < tileSize; px += 1) {
+        const bit = (7 - px);
+        const colorIndex = ((high >> bit) & 1) << 1 | ((low >> bit) & 1);
+        ctx.fillStyle = palette[colorIndex];
+        ctx.fillRect(tileX + (px * scale), tileY + (py * scale), scale, scale);
+      }
+    }
+  }
+
+  const selectedStart = previewOffset + Math.floor((state.selectedTileOffset - previewOffset) / 16) * 16;
+  tileDetails.textContent = `Tile preview • offset ${formatOffset(previewOffset)} • selected tile ${formatOffset(selectedStart)}`;
+}
+
 async function openRom() {
   const filePath = await window.romEditor.openRom();
 
@@ -112,12 +227,15 @@ async function openRom() {
     state.filePath = rom.filePath;
     state.bytes = rom.bytes;
     state.highlightOffset = null;
+    state.activeSection = 'Header';
 
     fileInfoEl.textContent = `${rom.fileName} • ${rom.size} bytes`;
     fileInfoEl.style.color = '#e2e8f0';
 
     renderRomInfo(rom.metadata);
+    buildRomSections();
     drawHexTable();
+    drawTilePreview();
   } catch (error) {
     setStatus(error.message, true);
     console.error(error);
@@ -200,8 +318,10 @@ function searchRom() {
 
   state.highlightOffset = offset;
   state.lastSearch = offset;
+  state.selectedTileOffset = offset;
 
   drawHexTable();
+  drawTilePreview();
   setStatus(`Found ${label} at ${formatOffset(offset)}`);
 
   const targetButton = document.querySelector(`.byte-cell[data-offset="${offset}"]`);
@@ -210,8 +330,23 @@ function searchRom() {
   }
 }
 
+function analyzeRom() {
+  if (!state.bytes.length) {
+    setStatus('Load a ROM before analysis.', true);
+    return;
+  }
+
+  const totalSize = state.bytes.length;
+  const banks = Math.max(1, Math.ceil(totalSize / 0x4000));
+  const header = `${totalSize.toLocaleString()} bytes • ${banks} bank(s)`;
+  setStatus(`ROM analysis: ${header}`);
+  const firstBytes = Array.from(state.bytes.slice(0, 32)).map((value) => formatHexByte(value)).join(' ');
+  tileDetails.textContent = `Header sample: ${firstBytes} ...`;
+}
+
 openButton.addEventListener('click', openRom);
 saveButton.addEventListener('click', saveRom);
+analyzeButton.addEventListener('click', analyzeRom);
 searchButton.addEventListener('click', searchRom);
 searchInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
@@ -221,3 +356,7 @@ searchInput.addEventListener('keydown', (event) => {
 
 setStatus('No ROM loaded');
 renderRomInfo(null);
+buildRomSections();
+drawHexTable();
+drawTilePreview();
+  
